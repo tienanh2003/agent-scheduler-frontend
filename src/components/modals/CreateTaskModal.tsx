@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { X, Calendar, AlertCircle } from 'lucide-react';
 import { taskApi } from '@/lib/api';
 import { useTaskStore } from '@/store';
-import { LABEL_VALUES, type Label, type Priority } from '@/types';
-import { getLabelClass, getPriorityClass } from '@/lib/utils';
+import { LABEL_VALUES, PRIORITY, getLabelClass, getPriorityClass } from '@/constants';
+import type { Label, Priority } from '@/types';
 import clsx from 'clsx';
 
 interface CreateTaskModalProps {
@@ -21,7 +21,7 @@ export function CreateTaskModal({ isOpen, onClose, parentTaskId }: CreateTaskMod
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedLabels, setSelectedLabels] = useState<Label[]>([]);
-  const [priority, setPriority] = useState<Priority>('medium');
+  const [priority, setPriority] = useState<Priority>(PRIORITY.MEDIUM);
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [scheduledAt, setScheduledAt] = useState('');
   const [autoStart, setAutoStart] = useState(false);
@@ -69,7 +69,7 @@ export function CreateTaskModal({ isOpen, onClose, parentTaskId }: CreateTaskMod
     setTitle('');
     setDescription('');
     setSelectedLabels([]);
-    setPriority('medium');
+    setPriority(PRIORITY.MEDIUM);
     setReviewEnabled(true);
     setScheduledAt('');
     setAutoStart(false);
@@ -182,15 +182,15 @@ export function CreateTaskModal({ isOpen, onClose, parentTaskId }: CreateTaskMod
               Priority
             </label>
             <div className="flex gap-2">
-              {(['low', 'medium', 'high', 'urgent'] as Priority[]).map(p => (
+              {Object.values(PRIORITY).map(p => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => setPriority(p)}
                   className={clsx(
-                    'px-3 py-1.5 rounded text-sm font-medium transition-colors',
+                    'px-3 py-1.5 rounded text-sm font-medium transition-colors capitalize',
                     priority === p
-                      ? getPriorityClass(p as Priority)
+                      ? getPriorityClass(p)
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   )}
                 >
@@ -264,4 +264,3 @@ export function CreateTaskModal({ isOpen, onClose, parentTaskId }: CreateTaskMod
     </div>
   );
 }
-

@@ -18,6 +18,12 @@ import { taskApi } from '@/lib/api';
 import { StageIndicator } from '@/components/stages/StageIndicator';
 import { ActivityLog } from '@/components/activity/ActivityLog';
 import { ChildTasks } from '@/components/child-tasks/ChildTasks';
+import {
+  COLUMNS,
+  COLUMNS as COLUMN_CONSTANTS,
+  UI_STRINGS,
+  getColumnConfig,
+} from '@/constants';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -40,7 +46,7 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
 
   // Fetch activities
   useEffect(() => {
-    if (task.status === 'running' || task.column === 'done') {
+    if (task.status === 'running' || task.column === COLUMNS.DONE) {
       fetchActivities();
     }
   }, [task.id, task.status]);
@@ -61,9 +67,9 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
     setIsActionLoading(true);
     try {
       await startTask(task.id);
-      toast.success('Task started');
+      toast.success(UI_STRINGS.TASK_STARTED);
     } catch (error) {
-      toast.error('Failed to start task');
+      toast.error(UI_STRINGS.FAILED_TO_START);
     } finally {
       setIsActionLoading(false);
     }
@@ -73,9 +79,9 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
     setIsActionLoading(true);
     try {
       await pauseTask(task.id);
-      toast.success('Task paused');
+      toast.success(UI_STRINGS.TASK_PAUSED);
     } catch (error) {
-      toast.error('Failed to pause task');
+      toast.error(UI_STRINGS.FAILED_TO_PAUSE);
     } finally {
       setIsActionLoading(false);
     }
@@ -85,9 +91,9 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
     setIsActionLoading(true);
     try {
       await retryTask(task.id);
-      toast.success('Task retry started');
+      toast.success(UI_STRINGS.TASK_RETRY_STARTED);
     } catch (error) {
-      toast.error('Failed to retry task');
+      toast.error(UI_STRINGS.FAILED_TO_RETRY);
     } finally {
       setIsActionLoading(false);
     }
@@ -97,42 +103,42 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
     setIsActionLoading(true);
     try {
       await approveTask(task.id);
-      toast.success('Task approved');
+      toast.success(UI_STRINGS.TASK_APPROVED);
       onClose();
     } catch (error) {
-      toast.error('Failed to approve task');
+      toast.error(UI_STRINGS.FAILED_TO_APPROVE);
     } finally {
       setIsActionLoading(false);
     }
   };
 
   const handleReject = async () => {
-    const reason = prompt('Please enter rejection reason:');
+    const reason = prompt(UI_STRINGS.ENTER_REJECTION_REASON);
     if (!reason) return;
 
     setIsActionLoading(true);
     try {
       await rejectTask(task.id, reason);
-      toast.success('Task rejected');
+      toast.success(UI_STRINGS.TASK_REJECTED);
       onClose();
     } catch (error) {
-      toast.error('Failed to reject task');
+      toast.error(UI_STRINGS.FAILED_TO_REJECT);
     } finally {
       setIsActionLoading(false);
     }
   };
 
   const handleRequestChanges = async () => {
-    const changes = prompt('What changes are needed?');
+    const changes = prompt(UI_STRINGS.ENTER_CHANGES_NEEDED);
     if (!changes) return;
 
     setIsActionLoading(true);
     try {
       await requestChanges(task.id, changes);
-      toast.success('Changes requested');
+      toast.success(UI_STRINGS.CHANGES_REQUESTED);
       onClose();
     } catch (error) {
-      toast.error('Failed to request changes');
+      toast.error(UI_STRINGS.FAILED_TO_REQUEST_CHANGES);
     } finally {
       setIsActionLoading(false);
     }
@@ -142,6 +148,8 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
     if (!dateStr) return 'N/A';
     return new Date(dateStr).toLocaleString();
   };
+
+  const columnConfig = getColumnConfig(task.column);
 
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-gray-800 shadow-xl z-50 flex flex-col">
@@ -154,18 +162,14 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
           <div className="flex items-center gap-2 mt-1">
             <span className={clsx(
               'px-2 py-0.5 text-xs rounded font-medium',
-              task.column === 'todo' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-              task.column === 'doing' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-              task.column === 'review' && 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-              task.column === 'done' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-              task.column === 'error' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              columnConfig.chipClass
             )}>
-              {task.column.toUpperCase()}
+              {columnConfig.title.toUpperCase()}
             </span>
             {task.status === 'running' && (
               <span className="flex items-center gap-1 text-xs text-yellow-600">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Running
+                {UI_STRINGS.RUNNING}
               </span>
             )}
           </div>
@@ -184,7 +188,7 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
         {task.description && (
           <div>
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
+              {UI_STRINGS.DESCRIPTION}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
               {task.description}
@@ -193,10 +197,10 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
         )}
 
         {/* Stage Progress */}
-        {task.labels.length > 0 && (
+        {task.labels?.length > 0 && (
           <div>
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Execution Progress ({task.progress}%)
+              {UI_STRINGS.EXECUTION_PROGRESS} ({task.progress}%)
             </h3>
             <div className="progress-bar mb-3">
               <div
@@ -214,10 +218,10 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
         )}
 
         {/* Child Tasks */}
-        {task.childTasks.length > 0 && (
+        {task.childTasks?.length > 0 && (
           <div>
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Sub-tasks
+              {UI_STRINGS.SUB_TASKS}
             </h3>
             <ChildTasks
               parentId={task.id}
@@ -228,11 +232,11 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
         )}
 
         {/* Activity Log */}
-        {(task.status === 'running' || task.column === 'done' || task.column === 'review') && (
+        {(task.status === 'running' || task.column === COLUMNS.DONE || task.column === COLUMNS.REVIEW) && (
           <div>
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
-              Activity Log
+              {UI_STRINGS.ACTIVITY_LOG}
               {loadingActivities && <Loader2 className="w-3 h-3 animate-spin" />}
             </h3>
             <ActivityLog
@@ -250,14 +254,14 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-sm font-medium text-red-700 dark:text-red-400">
-                  Error
+                  {UI_STRINGS.ERROR}
                 </h4>
                 <p className="mt-1 text-sm text-red-600 dark:text-red-300">
                   {task.error}
                 </p>
                 {task.errorDetails?.suggestedFix && (
                   <p className="mt-2 text-xs text-red-500">
-                    Suggestion: {task.errorDetails.suggestedFix}
+                    {UI_STRINGS.SUGGESTION}: {task.errorDetails.suggestedFix}
                   </p>
                 )}
               </div>
@@ -268,28 +272,28 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
         {/* Metadata */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">Created:</span>
+            <span className="text-gray-500">{UI_STRINGS.CREATED}:</span>
             <p className="text-gray-700 dark:text-gray-300">{formatDate(task.createdAt)}</p>
           </div>
           <div>
-            <span className="text-gray-500">Priority:</span>
+            <span className="text-gray-500">{UI_STRINGS.PRIORITY}:</span>
             <p className="text-gray-700 dark:text-gray-300 capitalize">{task.priority}</p>
           </div>
           {task.startedAt && (
             <div>
-              <span className="text-gray-500">Started:</span>
+              <span className="text-gray-500">{UI_STRINGS.STARTED}:</span>
               <p className="text-gray-700 dark:text-gray-300">{formatDate(task.startedAt)}</p>
             </div>
           )}
           {task.completedAt && (
             <div>
-              <span className="text-gray-500">Completed:</span>
+              <span className="text-gray-500">{UI_STRINGS.COMPLETED}:</span>
               <p className="text-gray-700 dark:text-gray-300">{formatDate(task.completedAt)}</p>
             </div>
           )}
           {task.retryCount > 0 && (
             <div>
-              <span className="text-gray-500">Retries:</span>
+              <span className="text-gray-500">{UI_STRINGS.RETRIES}:</span>
               <p className="text-gray-700 dark:text-gray-300">{task.retryCount}/{task.maxRetries}</p>
             </div>
           )}
@@ -299,43 +303,43 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
       {/* Actions Footer */}
       <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         {/* Todo column - show Start button */}
-        {task.column === 'todo' && (
+        {task.column === COLUMNS.TODO && (
           <button
             onClick={handleStart}
             disabled={isActionLoading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
           >
             <Play className="w-4 h-4" />
-            Start Task
+            {UI_STRINGS.START_TASK}
           </button>
         )}
 
         {/* Doing column - show Pause button */}
-        {task.column === 'doing' && (
+        {task.column === COLUMNS.DOING && (
           <button
             onClick={handlePause}
             disabled={isActionLoading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50"
           >
             <Pause className="w-4 h-4" />
-            Pause Task
+            {UI_STRINGS.PAUSE_TASK}
           </button>
         )}
 
         {/* Error column - show Retry button */}
-        {task.column === 'error' && (
+        {task.column === COLUMNS.ERROR && (
           <button
             onClick={handleRetry}
             disabled={isActionLoading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           >
             <RotateCcw className="w-4 h-4" />
-            Retry Task
+            {UI_STRINGS.RETRY_TASK}
           </button>
         )}
 
         {/* Review column - show Review actions */}
-        {task.column === 'review' && (
+        {task.column === COLUMNS.REVIEW && (
           <div className="flex gap-3">
             <button
               onClick={handleReject}
@@ -343,7 +347,7 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
             >
               <XCircle className="w-4 h-4" />
-              Reject
+              {UI_STRINGS.REJECT}
             </button>
             <button
               onClick={handleRequestChanges}
@@ -351,7 +355,7 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50"
             >
               <MessageSquare className="w-4 h-4" />
-              Request Changes
+              {UI_STRINGS.REQUEST_CHANGES}
             </button>
             <button
               onClick={handleApprove}
@@ -359,7 +363,7 @@ export function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
-              Approve
+              {UI_STRINGS.APPROVE}
             </button>
           </div>
         )}

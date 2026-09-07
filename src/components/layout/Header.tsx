@@ -5,7 +5,7 @@ import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
 import { useTaskStore } from '@/store';
 import { dbApi } from '@/lib/api';
-import { socket } from '@/lib/socket';
+import { COLUMNS } from '@/constants';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -17,34 +17,9 @@ interface HeaderProps {
 export function Header({ onNewTask }: HeaderProps) {
   const tasks = useTaskStore(s => s.tasks);
   const fetchTasks = useTaskStore(s => s.fetchTasks);
-  const [isConnected, setIsConnected] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [dbStats, setDbStats] = useState<{ tasks: number; activities: number } | null>(null);
-
-  // Subscribe to socket connection status
-  React.useEffect(() => {
-    const handleConnect = () => setIsConnected(true);
-    const handleDisconnect = () => setIsConnected(false);
-
-    setIsConnected(socket.isConnected);
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-    };
-  }, []);
-
-  const handleConnectToggle = () => {
-    if (isConnected) {
-      socket.disconnect();
-    } else {
-      socket.connect();
-    }
-  };
 
   const handleClearDbClick = async () => {
     try {
@@ -73,11 +48,11 @@ export function Header({ onNewTask }: HeaderProps) {
   const stats = useMemo(() => {
     const taskList = Array.isArray(tasks) ? tasks : [];
     return {
-      todo: taskList.filter(t => t && t.column === 'todo').length,
-      doing: taskList.filter(t => t && t.column === 'doing').length,
-      review: taskList.filter(t => t && t.column === 'review').length,
-      done: taskList.filter(t => t && t.column === 'done').length,
-      error: taskList.filter(t => t && t.column === 'error').length,
+      todo: taskList.filter(t => t && t.column === COLUMNS.TODO).length,
+      doing: taskList.filter(t => t && t.column === COLUMNS.DOING).length,
+      review: taskList.filter(t => t && t.column === COLUMNS.REVIEW).length,
+      done: taskList.filter(t => t && t.column === COLUMNS.DONE).length,
+      error: taskList.filter(t => t && t.column === COLUMNS.ERROR).length,
     };
   }, [tasks]);
 
@@ -102,10 +77,7 @@ export function Header({ onNewTask }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <ConnectionStatus
-              isConnected={isConnected}
-              onToggle={handleConnectToggle}
-            />
+            <ConnectionStatus />
 
             <button
               onClick={handleClearDbClick}

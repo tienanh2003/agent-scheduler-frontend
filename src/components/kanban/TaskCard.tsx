@@ -5,7 +5,12 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Clock, AlertCircle, ChevronRight } from 'lucide-react';
 import type { Task } from '@/types';
-import { getLabelClass, formatDate } from '../../lib/utils';
+import { formatDate } from '@/lib/utils';
+import { getLabelClass } from '@/constants';
+import {
+  COLUMNS,
+  UI_STRINGS,
+} from '@/constants';
 import clsx from 'clsx';
 
 interface TaskCardProps {
@@ -34,9 +39,9 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
     transition,
   };
 
-  const isExecuting = task.status === 'running' || task.column === 'doing';
-  const hasError = task.column === 'error' || task.status === 'error';
-  const isInReview = task.column === 'review';
+  const isExecuting = task.status === 'running' || task.column === COLUMNS.DOING;
+  const hasError = task.column === COLUMNS.ERROR || task.status === 'error';
+  const isInReview = task.column === COLUMNS.REVIEW;
 
   const handleClick = (e: React.MouseEvent) => {
     if (!isDraggingSelf && onClick) {
@@ -134,7 +139,7 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
             {task.childTasks && task.childTasks.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <ChevronRight className="w-3 h-3" />
-                {task.childTasks.length} subtasks
+                {task.childTasks.length} {UI_STRINGS.SUBTASKS}
               </div>
             )}
 
@@ -142,12 +147,12 @@ export function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
             {hasError && task.error && (
               <div className="flex items-center gap-1 text-xs text-red-500">
                 <AlertCircle className="w-3 h-3" />
-                Error
+                {UI_STRINGS.ERROR}
               </div>
             )}
 
             {/* Scheduled indicator */}
-            {task.scheduledAt && task.column === 'todo' && (
+            {task.scheduledAt && task.column === COLUMNS.TODO && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Clock className="w-3 h-3" />
                 {formatDate(task.scheduledAt)}

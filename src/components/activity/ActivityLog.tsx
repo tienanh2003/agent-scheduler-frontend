@@ -12,6 +12,7 @@ import {
   Check
 } from 'lucide-react';
 import type { ActivityEntry } from '@/types';
+import { ACTIVITY_TYPE, FILE_CHANGE_TYPE } from '@/constants';
 import clsx from 'clsx';
 
 interface ActivityLogProps {
@@ -46,16 +47,17 @@ export function ActivityLog({
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'tool_call':
-      case 'tool_result':
+      case ACTIVITY_TYPE.TOOL_CALL:
+      case ACTIVITY_TYPE.TOOL_RESULT:
         return <Terminal className="w-3.5 h-3.5" />;
-      case 'file_change':
+      case ACTIVITY_TYPE.FILE_CHANGE:
         return <FileEdit className="w-3.5 h-3.5" />;
-      case 'agent_spawn':
+      case ACTIVITY_TYPE.AGENT_SPAWN:
         return <GitBranch className="w-3.5 h-3.5" />;
-      case 'error':
+      case ACTIVITY_TYPE.ERROR:
         return <AlertCircle className="w-3.5 h-3.5" />;
-      case 'thought':
+      case ACTIVITY_TYPE.THOUGHT:
+      case ACTIVITY_TYPE.MESSAGE:
         return <MessageSquare className="w-3.5 h-3.5" />;
       default:
         return <MessageSquare className="w-3.5 h-3.5" />;
@@ -64,17 +66,17 @@ export function ActivityLog({
 
   const getActivityClass = (type: string): string => {
     switch (type) {
-      case 'tool_call':
+      case ACTIVITY_TYPE.TOOL_CALL:
         return 'border-l-blue-400 bg-blue-50 dark:bg-blue-900/10';
-      case 'tool_result':
+      case ACTIVITY_TYPE.TOOL_RESULT:
         return 'border-l-blue-300 bg-blue-50/50 dark:bg-blue-900/5';
-      case 'file_change':
+      case ACTIVITY_TYPE.FILE_CHANGE:
         return 'border-l-amber-400 bg-amber-50 dark:bg-amber-900/10';
-      case 'agent_spawn':
+      case ACTIVITY_TYPE.AGENT_SPAWN:
         return 'border-l-purple-400 bg-purple-50 dark:bg-purple-900/10';
-      case 'error':
+      case ACTIVITY_TYPE.ERROR:
         return 'border-l-red-400 bg-red-50 dark:bg-red-900/10';
-      case 'thought':
+      case ACTIVITY_TYPE.THOUGHT:
         return 'border-l-gray-400 bg-gray-50 dark:bg-gray-800/50';
       default:
         return 'border-l-gray-300 dark:border-l-gray-600';
@@ -166,16 +168,16 @@ export function ActivityLog({
               {activity.file_path && (
                 <div>
                   <span className="font-mono text-amber-600 dark:text-amber-400">
-                    {activity.change_type === 'created' && '+'}
-                    {activity.change_type === 'modified' && '~'}
-                    {activity.change_type === 'deleted' && '-'}
+                    {activity.change_type === FILE_CHANGE_TYPE.CREATED && '+'}
+                    {activity.change_type === FILE_CHANGE_TYPE.MODIFIED && '~'}
+                    {activity.change_type === FILE_CHANGE_TYPE.DELETED && '-'}
                     {' '}{activity.file_path}
                   </span>
                 </div>
               )}
 
               {/* Agent spawn */}
-              {activity.activity_type === 'agent_spawn' && (
+              {activity.activity_type === ACTIVITY_TYPE.AGENT_SPAWN && (
                 <div>
                   <span className="text-purple-600 dark:text-purple-400">
                     Spawned sub-agent
@@ -189,7 +191,7 @@ export function ActivityLog({
               )}
 
               {/* Error */}
-              {activity.activity_type === 'error' && (
+              {activity.activity_type === ACTIVITY_TYPE.ERROR && (
                 <div className="text-red-600 dark:text-red-400">
                   {activity.content}
                 </div>
@@ -197,8 +199,8 @@ export function ActivityLog({
 
               {/* Regular content */}
               {!activity.tool_name && !activity.file_path &&
-               activity.activity_type !== 'agent_spawn' &&
-               activity.activity_type !== 'error' && (
+               activity.activity_type !== ACTIVITY_TYPE.AGENT_SPAWN &&
+               activity.activity_type !== ACTIVITY_TYPE.ERROR && (
                 <span className="text-gray-700 dark:text-gray-300 break-words">
                   {activity.content}
                 </span>

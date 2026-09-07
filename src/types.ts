@@ -3,70 +3,59 @@
  * Đồng bộ với backend/app/models/task.py và app/schemas/task/response.py
  */
 
+// Re-export constants for type definitions
+export {
+  COLUMNS,
+  LABELS,
+  TASK_STATUS,
+  PRIORITY,
+  STAGE_STATUS,
+  ACTIVITY_TYPE,
+  FILE_CHANGE_TYPE,
+} from '@/constants';
+
+// Import types from constants
+import type {
+  ColumnId,
+  LabelId,
+  TaskStatusId,
+  PriorityId,
+  StageStatusId,
+  ActivityTypeId,
+  FileChangeTypeId,
+} from '@/constants';
+
 // Column types
-export type Column = 'todo' | 'doing' | 'review' | 'done' | 'error';
+export type Column = ColumnId;
 
 // Task status
-export type TaskStatus = 'pending' | 'running' | 'paused' | 'reviewing' | 'completed' | 'error';
+export type TaskStatus = TaskStatusId;
 
 // Priority levels
-export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type Priority = PriorityId;
 
 // Label/Stage types (execution stages)
-export type Label = 'brainstorm' | 'research' | 'plan' | 'review-plan' | 'implement' | 'test' | 'code-review';
+export type Label = LabelId;
 
-export const LABEL_VALUES: Label[] = [
-  'brainstorm',
-  'research',
-  'plan',
-  'review-plan',
-  'implement',
-  'test',
-  'code-review',
-];
+// Label values array - re-exported from constants
+export { LABEL_VALUES } from '@/constants';
 
-// Stage output from agent execution
-export interface StageOutput {
-  label: string;
-  agent: string;
-  status: 'pending' | 'running' | 'completed' | 'error';
-  output: string;
-  summary?: string;
-  files_created: string[];
-  files_modified: string[];
-  files_deleted: string[];
-  tools_used: string[];
-  sub_agents_spawned: string[];
-  tokens_used?: number;
-  duration?: number;
-  started_at?: string;
-  completed_at?: string;
-  model?: string;
-  error?: string;
-}
+// Stage output status
+export type StageOutputStatus = StageStatusId;
 
 // Activity entry
 export interface ActivityEntry {
   id: string;
   call_id?: string;
   task_id: string;
-  activity_type: 'tool_call' | 'tool_result' | 'thought' | 'file_change' | 'agent_spawn' | 'error' | 'message';
+  activity_type: ActivityTypeId;
   content?: string;
   tool_name?: string;
   tool_input?: string;
   tool_output?: string;
   file_path?: string;
-  change_type?: 'created' | 'modified' | 'deleted';
+  change_type?: FileChangeTypeId;
   created_at: string;
-}
-
-// Column configuration
-export interface ColumnConfig {
-  id: Column;
-  title: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
 }
 
 // Main Task interface
@@ -122,6 +111,9 @@ export interface Task {
   tags: string[];
   assignedTo?: string;
 
+  // Claude Code session
+  sessionId?: string;
+
   // Timestamps
   createdAt: string;
   updatedAt?: string;
@@ -159,6 +151,26 @@ export interface UpdateTaskRequest {
 export interface MoveTaskRequest {
   column: Column;
   position?: number;
+}
+
+// Stage output from agent execution
+export interface StageOutput {
+  label: string;
+  agent: string;
+  status: StageOutputStatus;
+  output: string;
+  summary?: string;
+  files_created: string[];
+  files_modified: string[];
+  files_deleted: string[];
+  tools_used: string[];
+  sub_agents_spawned: string[];
+  tokens_used?: number;
+  duration?: number;
+  started_at?: string;
+  completed_at?: string;
+  model?: string;
+  error?: string;
 }
 
 // WebSocket event payloads

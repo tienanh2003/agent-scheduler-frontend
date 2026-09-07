@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Label, StageOutput } from '@/types';
+import { UI_STRINGS } from '@/constants';
 
 interface StageIndicatorProps {
   labels: Label[];
   currentIndex: number;
-  completedLabels: string[];
+  completedLabels?: string[];
   outputs?: Record<string, StageOutput>;
   compact?: boolean;
   onStageClick?: (label: string, output?: StageOutput) => void;
@@ -17,7 +18,7 @@ interface StageIndicatorProps {
 export function StageIndicator({
   labels,
   currentIndex,
-  completedLabels,
+  completedLabels = [],
   outputs = {},
   compact = false,
   onStageClick,
@@ -109,13 +110,13 @@ export function StageIndicator({
         <div className="ml-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              {outputs[expandedStage].agent} Output
+              {outputs[expandedStage].agent} {UI_STRINGS.OUTPUT}
             </span>
             <button
               onClick={() => onStageClick?.(expandedStage, outputs[expandedStage])}
               className="text-blue-500 hover:text-blue-600"
             >
-              View Full
+              {UI_STRINGS.VIEW_FULL}
             </button>
           </div>
 
@@ -128,17 +129,17 @@ export function StageIndicator({
           <div className="flex flex-wrap gap-2 text-[10px]">
             {(outputs[expandedStage]?.files_created?.length ?? 0) > 0 && (
               <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                +{outputs[expandedStage]?.files_created?.length} created
+                +{outputs[expandedStage]?.files_created?.length} {UI_STRINGS.CREATED_FILES}
               </span>
             )}
             {(outputs[expandedStage]?.files_modified?.length ?? 0) > 0 && (
               <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">
-                ~{outputs[expandedStage]?.files_modified?.length} modified
+                ~{outputs[expandedStage]?.files_modified?.length} {UI_STRINGS.MODIFIED_FILES}
               </span>
             )}
             {(outputs[expandedStage]?.tools_used?.length ?? 0) > 0 && (
               <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300 rounded">
-                {outputs[expandedStage]?.tools_used?.length} tools used
+                {outputs[expandedStage]?.tools_used?.length} {UI_STRINGS.TOOLS_USED}
               </span>
             )}
           </div>

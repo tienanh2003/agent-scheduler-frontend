@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
+import { WS_EVENTS, API } from '@/constants';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://127.0.0.1:8000';
+const WS_URL = API.BASE_URL;
 
 export type SocketEventHandler = (data: unknown) => void;
 
@@ -16,7 +17,7 @@ class SocketManager {
 
   private async checkServerHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${WS_URL}/api/v1/health`, {
+      const response = await fetch(`${WS_URL}${API.HEALTH}`, {
         method: 'GET',
         signal: AbortSignal.timeout(3000),
       });
@@ -113,36 +114,36 @@ class SocketManager {
   private setupEventHandlers() {
     if (!this.socket) return;
 
-    // Task lifecycle
-    this.socket.on('task:created', (data) => this.emit('task:created', data));
-    this.socket.on('task:updated', (data) => this.emit('task:updated', data));
-    this.socket.on('task:deleted', (data) => this.emit('task:deleted', data));
+    // Task lifecycle - using constants
+    this.socket.on(WS_EVENTS.TASK_CREATED, (data) => this.emit(WS_EVENTS.TASK_CREATED, data));
+    this.socket.on(WS_EVENTS.TASK_UPDATED, (data) => this.emit(WS_EVENTS.TASK_UPDATED, data));
+    this.socket.on(WS_EVENTS.TASK_DELETED, (data) => this.emit(WS_EVENTS.TASK_DELETED, data));
 
     // Kanban
-    this.socket.on('task:moved', (data) => this.emit('task:moved', data));
+    this.socket.on(WS_EVENTS.TASK_MOVED, (data) => this.emit(WS_EVENTS.TASK_MOVED, data));
 
     // Execution
-    this.socket.on('task:started', (data) => this.emit('task:started', data));
-    this.socket.on('task:paused', (data) => this.emit('task:paused', data));
-    this.socket.on('task:resumed', (data) => this.emit('task:resumed', data));
+    this.socket.on(WS_EVENTS.TASK_STARTED, (data) => this.emit(WS_EVENTS.TASK_STARTED, data));
+    this.socket.on(WS_EVENTS.TASK_PAUSED, (data) => this.emit(WS_EVENTS.TASK_PAUSED, data));
+    this.socket.on(WS_EVENTS.TASK_RESUMED, (data) => this.emit(WS_EVENTS.TASK_RESUMED, data));
 
     // Stages
-    this.socket.on('task:stage-start', (data) => this.emit('task:stage-start', data));
-    this.socket.on('task:stage-complete', (data) => this.emit('task:stage-complete', data));
+    this.socket.on(WS_EVENTS.TASK_STAGE_START, (data) => this.emit(WS_EVENTS.TASK_STAGE_START, data));
+    this.socket.on(WS_EVENTS.TASK_STAGE_COMPLETE, (data) => this.emit(WS_EVENTS.TASK_STAGE_COMPLETE, data));
     this.socket.on('task:stage-error', (data) => this.emit('task:stage-error', data));
 
     // Progress
-    this.socket.on('task:progress', (data) => this.emit('task:progress', data));
+    this.socket.on(WS_EVENTS.TASK_PROGRESS, (data) => this.emit(WS_EVENTS.TASK_PROGRESS, data));
 
     // Review
-    this.socket.on('task:review-requested', (data) => this.emit('task:review-requested', data));
-    this.socket.on('task:approved', (data) => this.emit('task:approved', data));
-    this.socket.on('task:rejected', (data) => this.emit('task:rejected', data));
-    this.socket.on('task:changes-requested', (data) => this.emit('task:changes-requested', data));
+    this.socket.on(WS_EVENTS.TASK_REVIEW_REQUESTED, (data) => this.emit(WS_EVENTS.TASK_REVIEW_REQUESTED, data));
+    this.socket.on(WS_EVENTS.TASK_APPROVED, (data) => this.emit(WS_EVENTS.TASK_APPROVED, data));
+    this.socket.on(WS_EVENTS.TASK_REJECTED, (data) => this.emit(WS_EVENTS.TASK_REJECTED, data));
+    this.socket.on(WS_EVENTS.TASK_CHANGES_REQUESTED, (data) => this.emit(WS_EVENTS.TASK_CHANGES_REQUESTED, data));
 
     // Completion
     this.socket.on('task:completed', (data) => this.emit('task:completed', data));
-    this.socket.on('task:error', (data) => this.emit('task:error', data));
+    this.socket.on(WS_EVENTS.TASK_ERROR, (data) => this.emit(WS_EVENTS.TASK_ERROR, data));
 
     // Agents
     this.socket.on('task:agent-start', (data) => this.emit('task:agent-start', data));

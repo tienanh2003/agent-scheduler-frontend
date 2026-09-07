@@ -2,96 +2,67 @@
 
 import { useState } from 'react';
 import { Play, Clock, Shield } from 'lucide-react';
+import {
+  LABELS,
+  LABEL_CONFIG,
+  PERMISSION_PROFILE,
+  PERMISSION_PROFILE_CONFIG,
+  UI_STRINGS,
+} from '@/constants';
+import { taskApi } from '@/lib/api';
+import type { Label, Task } from '@/types';
 
 interface TaskBuilderProps {
   onSave?: (task: Task) => void;
   onRunNow?: (task: Task) => void;
 }
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  agents: string[];
-  permissionProfile: 'safe' | 'code' | 'full';
-  scheduledAt: string | null;
-  status: 'pending' | 'running' | 'completed';
-  createdAt: string;
-}
-
-const AGENTS = [
-  { id: 'brainstorm', label: 'Brainstorm', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  { id: 'research', label: 'Research', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { id: 'plan', label: 'Plan', color: 'bg-green-100 text-green-700 border-green-200' },
-  { id: 'review-plan', label: 'Review Plan', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'implement', label: 'Implement', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-  { id: 'test', label: 'Test', color: 'bg-pink-100 text-pink-700 border-pink-200' },
-  { id: 'code-review', label: 'Code Review', color: 'bg-red-100 text-red-700 border-red-200' },
-];
-
-const PERMISSION_PROFILES = [
-  { id: 'safe', label: 'Safe', description: 'Read/Search', icon: Shield },
-  { id: 'code', label: 'Code', description: 'Read/Edit/Test', icon: Shield },
-  { id: 'full', label: 'Full', description: 'All tools', icon: Shield },
-];
-
 export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+  const [selectedLabels, setSelectedLabels] = useState<Label[]>([]);
   const [permissionProfile, setPermissionProfile] = useState<'safe' | 'code' | 'full'>('code');
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const generateId = () => `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-  const toggleAgent = (agentId: string) => {
-    setSelectedAgents((prev) =>
-      prev.includes(agentId)
-        ? prev.filter((id) => id !== agentId)
-        : [...prev, agentId]
+  const toggleLabel = (labelId: Label) => {
+    setSelectedLabels((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId)
+        : [...prev, labelId]
     );
   };
 
-  const createTask = (): Task => ({
-    id: generateId(),
+  const createTaskPayload = () => ({
     title,
     description,
-    agents: selectedAgents,
-    permissionProfile,
-    scheduledAt: isScheduled ? scheduledAt : null,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
+    labels: selectedLabels,
+    ...(isScheduled && scheduledAt ? { scheduledAt } : {}),
+    autoStart: false,
+    reviewEnabled: true,
   });
 
   const handleSaveToBoard = async () => {
     if (!title.trim()) {
-      alert('Please enter a task title');
+      alert(UI_STRINGS.ENTER_TASK_TITLE);
       return;
     }
-    if (selectedAgents.length === 0) {
-      alert('Please select at least one agent');
+    if (selectedLabels.length === 0) {
+      alert(UI_STRINGS.SELECT_AT_LEAST_ONE_AGENT);
       return;
     }
 
     setIsSubmitting(true);
-    const task = createTask();
-
     try {
-      // Save to localStorage for persistence
-      const existingTasks = JSON.parse(localStorage.getItem('scheduler-tasks') || '[]');
-      localStorage.setItem('scheduler-tasks', JSON.stringify([...existingTasks, task]));
-
-      // Dispatch custom event for board updates
-      window.dispatchEvent(new CustomEvent('task-saved', { detail: task }));
+      const task = await taskApi.create(createTaskPayload());
 
       onSave?.(task);
 
       // Reset form
       setTitle('');
       setDescription('');
-      setSelectedAgents([]);
+      setSelectedLabels([]);
       setPermissionProfile('code');
       setIsScheduled(false);
       setScheduledAt('');
@@ -105,38 +76,29 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
 
   const handleRunNow = async () => {
     if (!title.trim()) {
-      alert('Please enter a task title');
+      alert(UI_STRINGS.ENTER_TASK_TITLE);
       return;
     }
-    if (selectedAgents.length === 0) {
-      alert('Please select at least one agent');
+    if (selectedLabels.length === 0) {
+      alert(UI_STRINGS.SELECT_AT_LEAST_ONE_AGENT);
       return;
     }
 
     setIsSubmitting(true);
-    const task: Task = {
-      ...createTask(),
-      status: 'running',
-    };
-
     try {
-      // Store in localStorage
-      const existingTasks = JSON.parse(localStorage.getItem('scheduler-tasks') || '[]');
-      localStorage.setItem('scheduler-tasks', JSON.stringify([...existingTasks, task]));
-
-      // Push to Claude (simulate via custom event)
-      window.dispatchEvent(new CustomEvent('task-run-now', { detail: task }));
+      const task = await taskApi.create(createTaskPayload());
+      const startedTask = await taskApi.start(task.id);
 
       // Notify parent
-      onRunNow?.(task);
+      onRunNow?.(startedTask);
 
       // Show feedback
-      alert(`Task "${task.title}" is now running! The agent will start processing shortly.`);
+      alert(`Task "${startedTask.title}" is now running! The agent will start processing shortly.`);
 
       // Reset form
       setTitle('');
       setDescription('');
-      setSelectedAgents([]);
+      setSelectedLabels([]);
       setPermissionProfile('code');
       setIsScheduled(false);
       setScheduledAt('');
@@ -150,12 +112,12 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Task</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{UI_STRINGS.CREATE_NEW_TASK}</h2>
 
       {/* Title Input */}
       <div className="mb-5">
         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-          Task Title
+          {UI_STRINGS.TASK_TITLE}
         </label>
         <input
           type="text"
@@ -170,7 +132,7 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
       {/* Description Textarea */}
       <div className="mb-5">
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-          Description
+          {UI_STRINGS.DESCRIPTION}
         </label>
         <textarea
           id="description"
@@ -182,30 +144,30 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
         />
       </div>
 
-      {/* Agent Selection */}
+      {/* Label/Agent Selection */}
       <div className="mb-5">
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Select Agents
+          {UI_STRINGS.SELECT_AGENTS}
         </label>
         <div className="flex flex-wrap gap-2">
-          {AGENTS.map((agent) => (
+          {Object.entries(LABEL_CONFIG).map(([labelId, config]) => (
             <button
-              key={agent.id}
+              key={labelId}
               type="button"
-              onClick={() => toggleAgent(agent.id)}
+              onClick={() => toggleLabel(labelId as Label)}
               className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all duration-200 ${
-                selectedAgents.includes(agent.id)
-                  ? `${agent.color} border-current ring-2 ring-offset-1 ring-gray-200`
+                selectedLabels.includes(labelId as Label)
+                  ? `${config.color} border-current ring-2 ring-offset-1 ring-gray-200`
                   : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
               }`}
             >
-              {agent.label}
+              {config.label}
             </button>
           ))}
         </div>
-        {selectedAgents.length > 0 && (
+        {selectedLabels.length > 0 && (
           <p className="mt-2 text-sm text-gray-500">
-            Selected: {selectedAgents.length} agent{selectedAgents.length !== 1 ? 's' : ''}
+            {UI_STRINGS.SELECTED_AGENTS}: {selectedLabels.length} {UI_STRINGS.AGENTS}
           </p>
         )}
       </div>
@@ -214,29 +176,29 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
       <div className="mb-5">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <Shield className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />
-          Permission Profile
+          {UI_STRINGS.PERMISSION_PROFILE}
         </label>
         <div className="grid grid-cols-3 gap-3">
-          {PERMISSION_PROFILES.map((profile) => (
+          {Object.entries(PERMISSION_PROFILE_CONFIG).map(([profileId, config]) => (
             <button
-              key={profile.id}
+              key={profileId}
               type="button"
-              onClick={() => setPermissionProfile(profile.id as 'safe' | 'code' | 'full')}
+              onClick={() => setPermissionProfile(profileId as 'safe' | 'code' | 'full')}
               className={`p-4 rounded-lg border-2 text-center transition-all duration-200 ${
-                permissionProfile === profile.id
+                permissionProfile === profileId
                   ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                   : 'border-gray-200 hover:border-gray-300 bg-white'
               }`}
             >
-              <profile.icon
+              <Shield
                 className={`w-6 h-6 mx-auto mb-2 ${
-                  permissionProfile === profile.id ? 'text-blue-600' : 'text-gray-400'
+                  permissionProfile === profileId ? 'text-blue-600' : 'text-gray-400'
                 }`}
               />
-              <p className={`font-semibold ${permissionProfile === profile.id ? 'text-blue-900' : 'text-gray-700'}`}>
-                {profile.label}
+              <p className={`font-semibold ${permissionProfile === profileId ? 'text-blue-900' : 'text-gray-700'}`}>
+                {config.label}
               </p>
-              <p className="text-xs text-gray-500 mt-1">{profile.description}</p>
+              <p className="text-xs text-gray-500 mt-1">{config.description}</p>
             </button>
           ))}
         </div>
@@ -247,7 +209,7 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
         <div className="flex items-center justify-between mb-3">
           <label className="flex items-center text-sm font-medium text-gray-700">
             <Clock className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />
-            Schedule for Later
+            {UI_STRINGS.SCHEDULE_FOR_LATER}
           </label>
           <button
             type="button"
@@ -288,7 +250,7 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
           disabled={isSubmitting}
           className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save to Board
+          {UI_STRINGS.SAVE_TO_BOARD}
         </button>
         <button
           type="button"
@@ -297,7 +259,7 @@ export default function TaskBuilder({ onSave, onRunNow }: TaskBuilderProps) {
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Play className="w-5 h-5" />
-          Run Now
+          {UI_STRINGS.RUN_NOW}
         </button>
       </div>
 

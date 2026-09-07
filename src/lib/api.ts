@@ -1,7 +1,5 @@
 import type { Task, Column, StageOutput } from '@/types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-const API_PREFIX = '/api/v1';
+import { API, DEFAULTS } from '@/constants';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -14,7 +12,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
+  const url = `${API.BASE_URL}${endpoint}`;
 
   const config: RequestInit = {
     headers: {
@@ -100,13 +98,13 @@ function transformTask(task: Record<string, unknown>): Task {
     title: task.title as string,
     description: task.description as string | undefined,
     labels: parseLabels(task.labels),
-    currentLabelIndex: (task.current_label_index as number) || 0,
+    currentLabelIndex: (task.current_label_index as number) || DEFAULTS.CURRENT_LABEL_INDEX,
     completedLabels: parseJson<string[]>(task.completed_labels, []),
-    reviewEnabled: (task.review_enabled as boolean) ?? true,
+    reviewEnabled: (task.review_enabled as boolean) ?? DEFAULTS.REVIEW_ENABLED,
     scheduledAt: task.scheduled_at as string | undefined,
-    autoStart: (task.auto_start as boolean) ?? false,
-    column: (task.column as Column) || 'todo',
-    status: (task.status as Task['status']) || 'pending',
+    autoStart: (task.auto_start as boolean) ?? DEFAULTS.AUTO_START,
+    column: (task.column as Column) || DEFAULTS.COLUMN,
+    status: (task.status as Task['status']) || DEFAULTS.TASK_STATUS,
     parentTaskId: task.parent_task_id as string | undefined,
     childTasks: parseJson<string[]>(task.child_tasks, []),
     outputs: parseOutputs(task.outputs),
@@ -114,9 +112,9 @@ function transformTask(task: Record<string, unknown>): Task {
     error: task.error as string | undefined,
     errorDetails: parseJson<Task['errorDetails']>(task.error_details, undefined),
     retryCount: (task.retry_count as number) || 0,
-    maxRetries: (task.max_retries as number) || 3,
-    progress: (task.progress as number) || 0,
-    priority: (task.priority as Task['priority']) || 'medium',
+    maxRetries: (task.max_retries as number) || DEFAULTS.MAX_RETRIES,
+    progress: (task.progress as number) || DEFAULTS.PROGRESS,
+    priority: (task.priority as Task['priority']) || DEFAULTS.PRIORITY,
     tags: parseJson<string[]>(task.tags, []),
     assignedTo: task.assigned_to as string | undefined,
     createdAt: task.created_at as string,
@@ -161,7 +159,7 @@ export const taskApi = {
     if (params?.limit) searchParams.set('limit', params.limit.toString());
 
     const query = searchParams.toString();
-    const endpoint = query ? `${API_PREFIX}/tasks?${query}` : `${API_PREFIX}/tasks`;
+    const endpoint = query ? `${API.TASKS}?${query}` : API.TASKS;
     return request<{ tasks: Record<string, unknown>[]; total: number }>(endpoint)
       .then(r => ({
         items: r.tasks.map(transformTask),
@@ -170,7 +168,7 @@ export const taskApi = {
   },
 
   get: (taskId: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}`)
+    return request<Record<string, unknown>>(API.TASK_BY_ID(taskId))
       .then(r => transformTask(r));
   },
 
@@ -188,9 +186,9 @@ export const taskApi = {
     const payload = {
       ...toSnakeCase(data),
       // Map priority to enum value
-      priority: data.priority || 'medium',
+      priority: data.priority || DEFAULTS.PRIORITY,
     };
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks`, {
+    return request<Record<string, unknown>>(API.TASKS, {
       method: 'POST',
       body: JSON.stringify(payload),
     }).then(r => transformTask(r));
@@ -198,66 +196,66 @@ export const taskApi = {
 
   update: (taskId: string, data: Partial<Task>): Promise<Task> => {
     const payload = toSnakeCase(data as Record<string, unknown>);
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}`, {
+    return request<Record<string, unknown>>(API.TASK_BY_ID(taskId), {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }).then(r => transformTask(r));
   },
 
   delete: (taskId: string, cascade: boolean = true): Promise<void> => {
-    return request<{ success: boolean }>(`${API_PREFIX}/tasks/${taskId}?cascade=${cascade}`, {
+    return request<{ success: boolean }>(`${API.TASK_BY_ID(taskId)}?cascade=${cascade}`, {
       method: 'DELETE',
     }).then(() => undefined);
   },
 
   start: (taskId: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/start`, {
+    return request<Record<string, unknown>>(API.TASK_START(taskId), {
       method: 'POST',
     }).then(r => transformTask(r));
   },
 
   pause: (taskId: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/pause`, {
+    return request<Record<string, unknown>>(API.TASK_PAUSE(taskId), {
       method: 'POST',
     }).then(r => transformTask(r));
   },
 
   resume: (taskId: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/resume`, {
+    return request<Record<string, unknown>>(API.TASK_RESUME(taskId), {
       method: 'POST',
     }).then(r => transformTask(r));
   },
 
   retry: (taskId: string, fromStage?: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/retry`, {
+    return request<Record<string, unknown>>(API.TASK_RETRY(taskId), {
       method: 'POST',
       body: JSON.stringify({ from_stage: fromStage }),
     }).then(r => transformTask(r));
   },
 
   move: (taskId: string, column: Column, position?: number): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/move`, {
+    return request<Record<string, unknown>>(API.TASK_MOVE(taskId), {
       method: 'POST',
       body: JSON.stringify({ column: column, position }),
     }).then(r => transformTask(r));
   },
 
   approve: (taskId: string, comment?: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/approve`, {
+    return request<Record<string, unknown>>(API.TASK_APPROVE(taskId), {
       method: 'POST',
       body: JSON.stringify({ comment }),
     }).then(r => transformTask(r));
   },
 
   reject: (taskId: string, reason: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/reject`, {
+    return request<Record<string, unknown>>(API.TASK_REJECT(taskId), {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }).then(r => transformTask(r));
   },
 
   requestChanges: (taskId: string, changes: string, priority?: string): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/request-changes`, {
+    return request<Record<string, unknown>>(API.TASK_REQUEST_CHANGES(taskId), {
       method: 'POST',
       body: JSON.stringify({
         changes,
@@ -267,19 +265,19 @@ export const taskApi = {
   },
 
   schedule: (taskId: string, scheduledAt: string, autoStart: boolean): Promise<Task> => {
-    return request<Record<string, unknown>>(`${API_PREFIX}/tasks/${taskId}/schedule`, {
+    return request<Record<string, unknown>>(API.TASK_SCHEDULE(taskId), {
       method: 'POST',
       body: JSON.stringify({ scheduled_at: scheduledAt, auto_start: autoStart }),
     }).then(r => transformTask(r));
   },
 
   getActivities: (taskId: string, limit?: number): Promise<unknown[]> => {
-    return request<{ activities: unknown[] }>(`${API_PREFIX}/tasks/${taskId}/activities?limit=${limit || 100}`)
+    return request<{ activities: unknown[] }>(`${API.TASK_ACTIVITIES(taskId)}?limit=${limit || DEFAULTS.API_PAGE_SIZE}`)
       .then(r => r.activities || []);
   },
 
   getReviewDecisions: (taskId: string): Promise<unknown[]> => {
-    return request<{ decisions: unknown[] }>(`${API_PREFIX}/tasks/${taskId}/review-decisions`)
+    return request<{ decisions: unknown[] }>(API.TASK_REVIEW_DECISIONS(taskId))
       .then(r => r.decisions || []);
   }
 };
@@ -287,7 +285,7 @@ export const taskApi = {
 // Database API
 export const dbApi = {
   clear: (): Promise<{ success: boolean; message: string; tables_cleared: string[] }> => {
-    return request(`${API_PREFIX}/db/clear`, { method: 'POST' });
+    return request(API.DB_CLEAR, { method: 'POST' });
   },
 
   getStats: (): Promise<{
@@ -296,6 +294,19 @@ export const dbApi = {
     activities: number;
     review_decisions: number;
   }> => {
-    return request(`${API_PREFIX}/db/stats`);
+    return request(API.DB_STATS);
+  }
+};
+
+// Claude CLI Status API
+export interface ClaudeStatus {
+  status: 'connected' | 'disconnected' | 'error';
+  message: string;
+  connected: boolean;
+}
+
+export const claudeApi = {
+  getStatus: (): Promise<ClaudeStatus> => {
+    return request<ClaudeStatus>(API.CLAUDE_STATUS);
   }
 };

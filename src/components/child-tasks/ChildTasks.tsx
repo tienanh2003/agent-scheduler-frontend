@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import type { Task } from '@/types';
+import { COLUMNS, TASK_STATUS } from '@/constants';
 import clsx from 'clsx';
 
 interface ChildTasksProps {
@@ -21,18 +22,18 @@ export function ChildTasks({
 
   const getStatusIcon = (task: Task) => {
     switch (task.status) {
-      case 'completed':
+      case TASK_STATUS.COMPLETED:
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'running':
+      case TASK_STATUS.RUNNING:
         return <Clock className="w-4 h-4 text-yellow-500 animate-pulse" />;
-      case 'error':
+      case TASK_STATUS.ERROR:
         return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:
         return <Clock className="w-4 h-4 text-gray-400" />;
     }
   };
 
-  const completedCount = childTasks.filter(t => t.status === 'completed').length;
+  const completedCount = childTasks.filter(t => t.status === TASK_STATUS.COMPLETED).length;
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -85,11 +86,11 @@ export function ChildTasks({
                 <div className="flex-1 min-w-0">
                   <p className={clsx(
                     'text-sm truncate',
-                    child.status === 'completed' && 'text-gray-500 line-through'
+                    child.status === TASK_STATUS.COMPLETED && 'text-gray-500 line-through'
                   )}>
                     {child.title}
                   </p>
-                  {child.status === 'running' && child.progress > 0 && (
+                  {child.status === TASK_STATUS.RUNNING && child.progress > 0 && (
                     <div className="mt-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 transition-all"
@@ -100,11 +101,11 @@ export function ChildTasks({
                 </div>
 
                 <span className={clsx(
-                  'px-1.5 py-0.5 text-xs rounded',
-                  child.column === 'done' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                  child.column === 'doing' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                  child.column === 'error' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                  child.column === 'todo' && 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  'px-1.5 py-0.5 text-xs rounded capitalize',
+                  child.column === COLUMNS.DONE && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                  child.column === COLUMNS.DOING && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                  child.column === COLUMNS.ERROR && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                  child.column === COLUMNS.TODO && 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                 )}>
                   {child.column}
                 </span>

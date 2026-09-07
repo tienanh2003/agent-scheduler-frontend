@@ -3,9 +3,20 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { Task, ColumnConfig } from '@/types';
+import type { Task } from '@/types';
+import { COLUMN_CONFIG, type ColumnId } from '@/constants';
 import { TaskCard } from './TaskCard';
 import clsx from 'clsx';
+
+// Column configuration type
+export interface ColumnConfig {
+  id: ColumnId;
+  title: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  chipClass: string;
+}
 
 interface ColumnProps {
   column: ColumnConfig;

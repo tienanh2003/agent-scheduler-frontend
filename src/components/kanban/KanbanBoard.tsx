@@ -16,7 +16,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { Task, Column as ColumnType } from '@/types';
 import { useTaskStore } from '@/store';
-import { COLUMNS } from './columns';
+import { COLUMNS, COLUMN_CONFIG, COLUMNS_ARRAY, type ColumnId } from '@/constants';
 import { Column } from './Column';
 import { TaskCard } from './TaskCard';
 
@@ -42,14 +42,14 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
     })
   );
 
-  // Group tasks by column
+  // Group tasks by column using constants
   const tasksByColumn = useMemo(() => {
     const grouped: Record<ColumnType, Task[]> = {
-      todo: [],
-      doing: [],
-      review: [],
-      done: [],
-      error: [],
+      [COLUMNS.TODO]: [],
+      [COLUMNS.DOING]: [],
+      [COLUMNS.REVIEW]: [],
+      [COLUMNS.DONE]: [],
+      [COLUMNS.ERROR]: [],
     };
 
     tasks.forEach(task => {
@@ -90,7 +90,7 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
     if (!activeTask) return;
 
     // Determine if dropping on a column or a task
-    const isOverColumn = COLUMNS.some(c => c.id === overId);
+    const isOverColumn = Object.values(COLUMNS).includes(overId as ColumnType);
     const overTask = tasks.find(t => t.id === overId);
 
     const targetColumn = isOverColumn
@@ -115,7 +115,7 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
     if (!activeTask) return;
 
     // Determine target column
-    const isOverColumn = COLUMNS.some(c => c.id === overId);
+    const isOverColumn = Object.values(COLUMNS).includes(overId as ColumnType);
     const overTask = tasks.find(t => t.id === overId);
 
     let targetColumn: ColumnType | null = null;
@@ -145,11 +145,11 @@ export function KanbanBoard({ onTaskClick }: KanbanBoardProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 p-4 overflow-x-auto min-h-[calc(100vh-64px)]">
-        {COLUMNS.map((column) => (
+        {COLUMNS_ARRAY.map((columnConfig) => (
           <Column
-            key={column.id}
-            column={column}
-            tasks={tasksByColumn[column.id]}
+            key={columnConfig.id}
+            column={columnConfig}
+            tasks={tasksByColumn[columnConfig.id]}
             onTaskClick={onTaskClick || (() => {})}
           />
         ))}
